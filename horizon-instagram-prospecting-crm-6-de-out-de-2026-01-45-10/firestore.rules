@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+    }
+
+    function isRequestOwner() {
+      return isAuthenticated() && request.auth.uid == request.resource.data.ownerId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+              (request.auth.token.email == "racris2013m@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidString(val, min, max) {
+      return val is string && val.size() >= min && val.size() <= max;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid == request.auth.uid &&
+             data.email is string;
+    }
+
+    function isValidBoard(data) {
+      return data.keys().hasAll(['name', 'ownerId', 'createdAt']) &&
+             isValidString(data.name, 1, 100) &&
+             data.ownerId == request.auth.uid;
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['boardId', 'ownerId', 'instagramHandle', 'status', 'createdAt']) &&
+             data.ownerId == request.auth.uid &&
+             isValidString(data.instagramHandle, 1, 50) &&
+             data.status in ['new', 'qualified', 'contacted', 'responded', 'interested', 'proposal', 'closed'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && 
+                       (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)) || 
+                       isAdmin();
+    }
+
+    match /boards/{boardId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidBoard(request.resource.data);
+      allow update: if (isDocOwner() && isRequestOwner() && isValidBoard(request.resource.data)) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /leads/{leadId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidLead(request.resource.data);
+      allow update: if (isDocOwner() && isRequestOwner() && isValidLead(request.resource.data)) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /campaigns/{campaignId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner();
+      allow update: if (isDocOwner() && isRequestOwner()) || isAdmin();
+      allow delete: if isDocOwner() || isAdmin();
+
+      match /variations/{variationId} {
+        allow read: if isDocOwner() || isAdmin();
+        allow create: if isRequestOwner();
+        allow update: if (isDocOwner() && isRequestOwner()) || isAdmin();
+        allow delete: if isDocOwner() || isAdmin();
+      }
+    }
+  }
+}

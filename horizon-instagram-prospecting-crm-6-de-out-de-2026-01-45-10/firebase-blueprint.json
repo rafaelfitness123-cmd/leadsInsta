@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["uid", "email"]
+    },
+    "ProspectBoard": {
+      "title": "Prospect Board",
+      "description": "A campaign or grouping of leads",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "niche": { "type": "string" },
+        "description": { "type": "string" },
+        "color": { "type": "string" },
+        "messageCampaignId": { "type": "string" },
+        "leadCount": { "type": "number" },
+        "responseRate": { "type": "number" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "ownerId", "createdAt"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "A prospective Instagram profile",
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "instagramHandle": { "type": "string" },
+        "instagramUrl": { "type": "string" },
+        "followersCount": { "type": "number" },
+        "city": { "type": "string" },
+        "bio": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "qualified", "contacted", "responded", "interested", "proposal", "closed"] },
+        "score": { "type": "number" },
+        "parsingConfidence": { "type": "number" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "isFavorite": { "type": "boolean" },
+        "lastContactedAt": { "type": "string", "format": "date-time" },
+        "nextFollowUpAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["boardId", "ownerId", "instagramHandle", "status", "createdAt"]
+    },
+    "MessageCampaign": {
+      "title": "Message Campaign",
+      "description": "A collection of message variations",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "niche": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["name", "ownerId"]
+    },
+    "MessageVariation": {
+      "title": "Message Variation",
+      "description": "A specific message template",
+      "type": "object",
+      "properties": {
+        "campaignId": { "type": "string" },
+        "title": { "type": "string" },
+        "text": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["campaignId", "text", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/boards/{boardId}": { "schema": "ProspectBoard", "description": "Prospecting boards" },
+    "/leads/{leadId}": { "schema": "Lead", "description": "Prospected leads" },
+    "/campaigns/{campaignId}": { "schema": "MessageCampaign", "description": "Message campaigns" },
+    "/campaigns/{campaignId}/variations/{variationId}": { "schema": "MessageVariation", "description": "Message variations" }
+  }
+}
